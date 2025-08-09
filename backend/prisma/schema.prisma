@@ -1,0 +1,281 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  password      String
+  avatar        String?
+  bio           String?   @db.Text
+  status        UserStatus @default(OFFLINE)
+  lastSeen      DateTime  @default(now())
+  isVerified    Boolean   @default(false)
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  rooms         RoomUser[]
+  messages      Message[]
+  notifications Notification[]
+  reactions     MessageReaction[]
+  readReceipts  MessageReadReceipt[]
+  blockedUsers  BlockedUser[] @relation("BlockingUser")
+  blockedBy     BlockedUser[] @relation("BlockedUser")
+  
+  // Settings
+  settings      UserSettings?
+  
+  @@index([email])
+  @@index([username])
+  @@index([status])
+  @@map("users")
+}
+
+model UserSettings {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  
+  // Notification settings
+  notifyMentions    Boolean  @default(true)
+  notifyReplies     Boolean  @default(true)
+  notifyNewMessages Boolean  @default(true)
+  soundEnabled      Boolean  @default(true)
+  
+  // Privacy settings
+  showOnlineStatus  Boolean  @default(true)
+  allowDirectMessages Boolean @default(true)
+  
+  // Display settings
+  theme             Theme    @default(DARK)
+  language          String   @default("en")
+  fontSize          Int      @default(14)
+  compactMode       Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_settings")
+}
+
+model Room {
+  id          String    @id @default(uuid())
+  name        String
+  description String?   @db.Text
+  avatar      String?
+  isPrivate   Boolean   @default(false)
+  isDirect    Boolean   @default(false)
+  maxMembers  Int       @default(0) // 0 = unlimited
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  users       RoomUser[]
+  messages    Message[]
+  invites     RoomInvite[]
+  
+  @@index([name])
+  @@index([isPrivate])
+  @@map("rooms")
+}
+
+model RoomUser {
+  id        String   @id @default(uuid())
+  userId    String
+  roomId    String
+  role      RoomRole @default(MEMBER)
+  nickname  String?
+  joinedAt  DateTime @default(now())
+  mutedUntil DateTime?
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, roomId])
+  @@index([userId])
+  @@index([roomId])
+  @@map("room_users")
+}
+
+model RoomInvite {
+  id        String   @id @default(uuid())
+  roomId    String
+  code      String   @unique @default(cuid())
+  uses      Int      @default(0)
+  maxUses   Int?
+  expiresAt DateTime?
+  createdBy String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@index([code])
+  @@index([roomId])
+  @@map("room_invites")
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  content   String    @db.Text
+  edited    Boolean   @default(false)
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+  editHistory Json[]  @default([])
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  userId    String
+  roomId    String
+  replyToId String?
+  
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  replyTo   Message?  @relation("MessageReply", fields: [replyToId], references: [id])
+  
+  replies     Message[]    @relation("MessageReply")
+  attachments Attachment[]
+  reactions   MessageReaction[]
+  readReceipts MessageReadReceipt[]
+  
+  @@index([roomId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([deleted])
+  @@map("messages")
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  messageId String
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  duration  Int?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+  @@map("attachments")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reactions")
+}
+
+model MessageReadReceipt {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  
+  // Relations
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_read_receipts")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  content   String?          @db.Text
+  data      Json?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  
+  // Relations
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model BlockedUser {
+  id         String   @id @default(uuid())
+  userId     String
+  blockedId  String
+  reason     String?  @db.Text
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  user       User     @relation("BlockingUser", fields: [userId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, blockedId])
+  @@index([userId])
+  @@index([blockedId])
+  @@map("blocked_users")
+}
+
+// ==================== ENUMS ====================
+
+enum UserStatus {
+  ONLINE
+  IDLE
+  DO_NOT_DISTURB
+  OFFLINE
+}
+
+enum RoomRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTION
+  REPLY
+  ROOM_INVITE
+  FRIEND_REQUEST
+  SYSTEM
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+}
