@@ -4,12 +4,14 @@ import { ReactRefreshRspackPlugin } from "@rspack/plugin-react-refresh";
 
 const isDev = process.env.NODE_ENV === "development";
 
-// Target browsers, see: https://github.com/browserslist/browserslist
 const targets = ["last 2 versions", "> 0.2%", "not dead", "Firefox ESR"];
 
 export default defineConfig({
 	entry: {
 		main: "./src/main.tsx"
+	},
+	devServer: {
+		historyApiFallback: true
 	},
 	resolve: {
 		extensions: ["...", ".ts", ".tsx", ".jsx"]
