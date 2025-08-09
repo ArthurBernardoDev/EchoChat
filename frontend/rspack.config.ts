@@ -19,6 +19,23 @@ export default defineConfig({
 	module: {
 		rules: [
 			{
+				test: /\.css$/,
+				use: [
+					{
+						loader: "postcss-loader",
+						options: {
+							postcssOptions: {
+								plugins: [
+									require("@tailwindcss/postcss"),
+									require("autoprefixer")
+								]
+							}
+						}
+					}
+				],
+				type: "css"
+			},
+			{
 				test: /\.svg$/,
 				type: "asset"
 			},

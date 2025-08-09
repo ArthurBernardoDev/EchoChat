@@ -10,33 +10,43 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 
-const signInForm = z.object({
-  username: z.string().min(3, 'Informe um username válido'),
+const signUpForm = z.object({
+  email: z.string().email('Informe um e-mail válido'),
+  username: z.string().min(3, 'Username deve ter ao menos 3 caracteres'),
   password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
 })
 
-type SignInForm = z.infer<typeof signInForm>
+type SignUpForm = z.infer<typeof signUpForm>
 
-export function SignIn() {
-  const { login } = useAuth()
+export function SignUp() {
+  const { register: registerUser } = useAuth()
   const navigate = useNavigate()
   
   const {
     register,
     handleSubmit,
     formState: { isSubmitting, errors },
-  } = useForm<SignInForm>({ resolver: zodResolver(signInForm) })
+  } = useForm<SignUpForm>({ resolver: zodResolver(signUpForm) })
 
-  async function handleSignIn(data: SignInForm) {
+  async function handleSignUp(data: SignUpForm) {
     try {
-      await login(data.username, data.password)
-      toast.success('Login realizado com sucesso!')
-      navigate('/')
-    } catch (error) {
-      toast.error('Falha ao entrar. Verifique suas credenciais.', {
+      console.log('Tentando registrar com:', data)
+      await registerUser(data.email, data.username, data.password)
+      toast.success('Conta criada com sucesso! Faça login para continuar.', {
         action: {
-          label: 'Tentar novamente',
-          onClick: () => handleSignIn(data),
+          label: 'Entrar',
+          onClick: () => navigate('/sign-in'),
+        },
+      })
+      navigate('/sign-in')
+    } catch (error: any) {
+      console.error('Erro no registro:', error)
+      console.error('Response:', error.response)
+      const errorMessage = error.response?.data?.message || 'Erro ao criar conta. Tente novamente.'
+      toast.error(errorMessage, {
+        action: {
+          label: 'Reenviar',
+          onClick: () => handleSignUp(data),
         },
       })
     }
@@ -44,14 +54,21 @@ export function SignIn() {
 
   return (
     <>
-      <Helmet title="Entrar" />
+      <Helmet title="Cadastro" />
       <div className="p-8">
         <div className="flex w-[350px] flex-col justify-center gap-6">
           <div className="flex flex-col gap-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tighter">Acessar EchoChat</h1>
-            <p className="text-sm text-muted-foreground">Entre com seu username e senha</p>
+            <h1 className="text-2xl font-semibold tracking-tighter">Criar conta</h1>
+            <p className="text-sm text-muted-foreground">Cadastre-se para acessar o EchoChat</p>
           </div>
-          <form className="space-y-4" onSubmit={handleSubmit(handleSignIn)}>
+          <form className="space-y-4" onSubmit={handleSubmit(handleSignUp)}>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" {...register('email')} />
+              {errors.email && (
+                <span className="text-xs text-red-500">{errors.email.message}</span>
+              )}
+            </div>
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input id="username" type="text" {...register('username')} />
@@ -67,12 +84,12 @@ export function SignIn() {
               )}
             </div>
             <Button disabled={isSubmitting} type="submit" className="w-full">
-              Entrar
+              Criar conta
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Não tem conta?{' '}
-              <Link className="text-foreground underline" to="/sign-up">
-                Cadastre-se
+              Já tem conta?{' '}
+              <Link className="text-foreground underline" to="/sign-in">
+                Entrar
               </Link>
             </p>
           </form>
@@ -80,4 +97,6 @@ export function SignIn() {
       </div>
     </>
   )
-} 
+}
+
+
