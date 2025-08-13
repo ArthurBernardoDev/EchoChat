@@ -191,16 +191,6 @@ export class UsersService {
       await tx.friendship.deleteMany({
         where: {
           OR: [
-            { userId },
-            { friendId: userId }
-          ]
-        }
-      });
-
-      // Deletar solicitações de amizade
-      await tx.friendRequest.deleteMany({
-        where: {
-          OR: [
             { senderId: userId },
             { receiverId: userId }
           ]

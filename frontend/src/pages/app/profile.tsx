@@ -113,12 +113,8 @@ export function Profile() {
   }
 
   async function handleUpdateStatus(status: UserStatus) {
-    try {
       await updateUserStatus(status)
       toast.success('Status atualizado!')
-    } catch (error) {
-      toast.error('Erro ao atualizar status')
-    }
   }
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {

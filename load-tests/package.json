@@ -1,0 +1,23 @@
+{
+  "name": "echochat-load-tests",
+  "version": "1.0.0",
+  "description": "Load tests for EchoChat application",
+  "scripts": {
+    "test": "node tests/progressive-load.js",
+    "test:basic": "node tests/01-basic-auth.js",
+    "test:chat": "node tests/02-chat-messages.js",
+    "test:friends": "node tests/03-friends-system.js",
+    "test:rooms": "node tests/04-rooms-system.js",
+    "test:websocket": "node tests/05-websocket-stress.js",
+    "test:integrated": "node tests/06-integrated-system.js",
+    "test:all": "npm run test:basic && npm run test:chat && npm run test:friends && npm run test:rooms"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "socket.io-client": "^4.7.0",
+    "@faker-js/faker": "^8.0.0"
+  },
+  "devDependencies": {
+    "artillery": "^2.0.0"
+  }
+}
