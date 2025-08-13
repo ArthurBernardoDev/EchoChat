@@ -14,6 +14,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       log: configService.get('NODE_ENV') === 'development' 
         ? ['query', 'info', 'warn', 'error'] 
         : ['error'],
+      errorFormat: 'minimal',
+      transactionOptions: {
+        maxWait: 5000, // 5 segundos máximo de espera
+        timeout: 10000, // 10 segundos timeout
+      },
     });
   }
 

@@ -6,6 +6,7 @@
 # Dist
 node_modules
 dist/
+pnpm-store/
 
 # Profile
 .rspack-profile-*/

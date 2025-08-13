@@ -1,0 +1,114 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: echochat-postgres
+    environment:
+      POSTGRES_DB: echochat
+      POSTGRES_USER: echochat
+      POSTGRES_PASSWORD: echochat123
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echochat -d echochat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: echochat-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database Migration
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: echochat-migrate
+    environment:
+      DATABASE_URL: "postgresql://echochat:echochat123@postgres:5432/echochat?schema=public&connection_limit=100&pool_timeout=20"
+    command: ["pnpm", "prisma", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: echochat-backend
+    environment:
+      DATABASE_URL: "postgresql://echochat:echochat123@postgres:5432/echochat?schema=public&connection_limit=500&pool_timeout=20&statement_timeout=30000&connect_timeout=10"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "your-super-secret-jwt-key-change-in-production"
+      JWT_REFRESH_SECRET: "your-super-secret-refresh-key-change-in-production"
+      JWT_EXPIRES_IN: "15m"
+      JWT_REFRESH_EXPIRES_IN: "7d"
+      NODE_ENV: "production"
+      PORT: 3000
+      API_PREFIX: "api"
+      API_VERSION: "v1"
+      FRONTEND_URL: "http://localhost:8080"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: echochat-frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: "http://localhost:3000/api/v1"
+
+  # Load Balancer (para múltiplas instâncias do backend)
+  nginx:
+    image: nginx:alpine
+    container_name: echochat-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:

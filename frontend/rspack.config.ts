@@ -10,6 +10,9 @@ export default defineConfig({
 	entry: {
 		main: "./src/main.tsx"
 	},
+	output: {
+		publicPath: "/",
+	},
 	devServer: {
 		historyApiFallback: true
 	},

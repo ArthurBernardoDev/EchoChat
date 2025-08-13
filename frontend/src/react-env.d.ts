@@ -1,4 +1,4 @@
-// CSS modules
+
 type CSSModuleClasses = { readonly [key: string]: string };
 
 declare module "*.module.css" {
@@ -34,65 +34,49 @@ declare module "*.module.sss" {
 	export default classes;
 }
 
-// CSS
+
 declare module "*.css" {
-	/**
-	 * @deprecated Use `import style from './style.css?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.scss" {
-	/**
-	 * @deprecated Use `import style from './style.scss?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.sass" {
-	/**
-	 * @deprecated Use `import style from './style.sass?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.less" {
-	/**
-	 * @deprecated Use `import style from './style.less?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.styl" {
-	/**
-	 * @deprecated Use `import style from './style.styl?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.stylus" {
-	/**
-	 * @deprecated Use `import style from './style.stylus?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.pcss" {
-	/**
-	 * @deprecated Use `import style from './style.pcss?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 declare module "*.sss" {
-	/**
-	 * @deprecated Use `import style from './style.sss?inline'` instead.
-	 */
+
 	const css: string;
 	export default css;
 }
 
-// images
+
 declare module "*.png" {
 	const src: string;
 	export default src;
@@ -141,7 +125,7 @@ declare module "*.avif" {
 	export default src;
 }
 
-// media
+
 declare module "*.mp4" {
 	const src: string;
 	export default src;
@@ -176,7 +160,7 @@ declare module "*.opus" {
 	export default src;
 }
 
-// fonts
+
 declare module "*.woff" {
 	const src: string;
 	export default src;
@@ -198,7 +182,7 @@ declare module "*.otf" {
 	export default src;
 }
 
-// other
+
 declare module "*.webmanifest" {
 	const src: string;
 	export default src;
@@ -211,3 +195,5 @@ declare module "*.txt" {
 	const src: string;
 	export default src;
 }
+
+declare module 'react-window-infinite-loader';

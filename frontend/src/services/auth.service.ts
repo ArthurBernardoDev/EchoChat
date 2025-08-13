@@ -2,7 +2,7 @@ import { api } from '../lib/api'
 
 interface AuthTokens {
   accessToken: string
-  refreshToken: string
+  refreshToken?: string
 }
 
 interface LoginCredentials {
@@ -21,8 +21,12 @@ class AuthService {
   private readonly REFRESH_TOKEN_KEY = '@EchoChat:refreshToken'
 
   setTokens(tokens: AuthTokens): void {
-    localStorage.setItem(this.ACCESS_TOKEN_KEY, tokens.accessToken)
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refreshToken)
+    if (tokens.accessToken) {
+      localStorage.setItem(this.ACCESS_TOKEN_KEY, tokens.accessToken)
+    }
+    if (typeof tokens.refreshToken === 'string') {
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refreshToken)
+    }
   }
 
   getAccessToken(): string | null {
@@ -48,15 +52,15 @@ class AuthService {
     await api.post('/auth/register', data)
   }
 
-  async refreshAccessToken(): Promise<AuthTokens | null> {
+  async refreshAccessToken(): Promise<{ accessToken: string } | null> {
     const refreshToken = this.getRefreshToken()
     if (!refreshToken) {
       return null
     }
 
     try {
-      const response = await api.post<AuthTokens>('/auth/refresh', { refreshToken })
-      this.setTokens(response.data)
+      const response = await api.post<{ accessToken: string }>('/auth/refresh', { refreshToken })
+      this.setTokens({ accessToken: response.data.accessToken })
       return response.data
     } catch (error) {
       this.clearTokens()
@@ -74,6 +78,11 @@ class AuthService {
   }
 
   logout(): void {
+    this.clearTokens()
+  }
+
+  async deleteAccount(): Promise<void> {
+    await api.delete('/users/account')
     this.clearTokens()
   }
 }

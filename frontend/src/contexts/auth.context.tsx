@@ -14,6 +14,7 @@ interface AuthContextData {
   login: (username: string, password: string) => Promise<void>
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => void
+  deleteAccount: () => Promise<void>
   refreshToken: () => Promise<void>
 }
 
@@ -61,6 +62,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     window.location.href = '/sign-in'
   }, [])
 
+  const deleteAccount = useCallback(async () => {
+    await authService.deleteAccount()
+    setUser(null)
+    window.location.href = '/sign-in'
+  }, [])
+
   const refreshToken = useCallback(async () => {
     try {
       await authService.refreshAccessToken()
@@ -79,6 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         register,
         logout,
+        deleteAccount,
         refreshToken,
       }}
     >
